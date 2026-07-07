@@ -662,7 +662,8 @@ def _do_processing():
     rcp_name  = st.session_state.get("_rcp_name", "receipt.xlsx")
 
     proc_ph   = st.empty()
-    extractor = InvoiceExtractor()
+    api_key = st.secrets["OPENAI_API_KEY"] if "OPENAI_API_KEY" in st.secrets else os.getenv("OPENAI_API_KEY")
+    extractor = InvoiceExtractor(api_key=api_key)
     parser    = ReceiptParser()
     engine    = CompareEngine()
     exporter  = ExcelExporter()
@@ -938,7 +939,8 @@ def _do_batch_processing():
             rcp_path.write_bytes(rcp_bytes)
 
             try:
-                extractor = InvoiceExtractor()
+                api_key = st.secrets["OPENAI_API_KEY"] if "OPENAI_API_KEY" in st.secrets else os.getenv("OPENAI_API_KEY")
+                extractor = InvoiceExtractor(api_key=api_key)
                 parser    = ReceiptParser()
                 engine    = CompareEngine()
                 exporter  = ExcelExporter()
@@ -1144,8 +1146,9 @@ def main():
     st.markdown(_CSS, unsafe_allow_html=True)
     st.markdown(_TOP_NAV, unsafe_allow_html=True)
 
-    if not os.getenv("OPENAI_API_KEY"):
-        st.error("Chưa thấy OPENAI_API_KEY. Vui lòng thêm key vào file .env trước khi mở app.")
+    api_key = st.secrets["OPENAI_API_KEY"] if "OPENAI_API_KEY" in st.secrets else os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        st.error("Chưa thấy OPENAI_API_KEY. Vui lòng thêm key vào Streamlit Secrets hoặc file .env trước khi mở app.")
         st.stop()
 
     if "_view" not in st.session_state:

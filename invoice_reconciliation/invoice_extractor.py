@@ -19,11 +19,14 @@ class InvoiceExtractor(object):
     - Du lieu tra ve luon duoc normalize va validate qua Pydantic.
     """
 
-    DEFAULT_MODEL = "gpt-4.1-mini"
+    DEFAULT_MODEL = "gpt-5-mini"
 
-    def __init__(self, model=None, api_key=None):
+    def __init__(self, model=None, api_key=None, base_url=None):
         self._model = model or self.DEFAULT_MODEL
-        self._client = OpenAI(api_key=api_key or os.getenv("OPENAI_API_KEY"))
+        self._client = OpenAI(
+            api_key=api_key or os.getenv("OPENAI_API_KEY"),
+            base_url=base_url or os.getenv("OPENAI_BASE_URL"),
+        )
 
     def extract(self, pdf_path):
         """

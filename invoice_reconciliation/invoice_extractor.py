@@ -5,7 +5,7 @@ import os
 from decimal import Decimal, InvalidOperation
 
 import pdfplumber
-from openai import OpenAI
+from openai import APIConnectionError, APIStatusError, APITimeoutError, OpenAI
 
 from .models import InvoiceData
 
@@ -100,13 +100,24 @@ class InvoiceExtractor(object):
             "Invoice text:\n%s"
         ) % invoice_text
 
-        response = self._client.responses.create(
-            model=self._model,
-            input=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
-        )
+        try:
+            response = self._client.responses.create(
+                model=self._model,
+                input=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt},
+                ],
+            )
+        except APIStatusError as exc:
+            raise RuntimeError(self._format_openai_status_error(exc)) from None
+        except APITimeoutError:
+            raise RuntimeError(
+                "OpenAI API timeout. Vui long thu lai sau hoac kiem tra ket noi mang."
+            ) from None
+        except APIConnectionError:
+            raise RuntimeError(
+                "Khong ket noi duoc OpenAI API. Vui long kiem tra OPENAI_BASE_URL va ket noi mang."
+            ) from None
 
         content = getattr(response, "output_text", "") or ""
         if not content:
@@ -119,6 +130,44 @@ class InvoiceExtractor(object):
             if parsed_json is None:
                 raise ValueError("OpenAI tra ve noi dung khong phai JSON hop le.")
             return parsed_json
+
+    def _format_openai_status_error(self, exc):
+        """
+        Tao thong bao loi OpenAI an toan, khong hien thi API key/response body.
+
+        :param APIStatusError exc: Loi status tu OpenAI SDK
+        :return: Thong bao loi cho UI
+        :rtype: str
+        """
+        status_code = getattr(exc, "status_code", None)
+        request_id = getattr(exc, "request_id", None)
+        response = getattr(exc, "response", None)
+        if not request_id and response is not None:
+            request_id = response.headers.get("x-request-id")
+
+        advice = {
+            400: "Request khong hop le. Hay kiem tra model va kich thuoc noi dung invoice.",
+            401: "API key khong hop le. Hay cap nhat OPENAI_API_KEY trong Streamlit Secrets.",
+            403: "API key/project chua co quyen dung model nay hoac Responses API.",
+            404: "Khong tim thay endpoint/model. Hay kiem tra OPENAI_BASE_URL va ten model.",
+            429: "Het quota, billing chua active, hoac dang bi rate limit.",
+        }.get(status_code)
+
+        if advice is None and status_code is not None and status_code >= 500:
+            advice = "OpenAI dang loi may chu. Vui long thu lai sau."
+        if advice is None:
+            advice = "Vui long kiem tra cau hinh OpenAI va thu lai."
+
+        details = [
+            "OpenAI API loi khi trich xuat invoice.",
+            "HTTP status: %s." % (status_code if status_code is not None else "unknown"),
+            "Model: %s." % self._model,
+            advice,
+        ]
+        if request_id:
+            details.append("Request ID: %s." % request_id)
+
+        return " ".join(details)
 
     def _try_extract_json_object(self, content):
         """

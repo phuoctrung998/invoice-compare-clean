@@ -721,6 +721,7 @@ def _do_processing():
 def _run_single_mode():
     result     = st.session_state.get("_single_result")
     processing = st.session_state.get("_processing", False)
+    single_error = st.session_state.get("_single_error")
     step = 3 if result else (2 if processing else 1)
 
     st.markdown(
@@ -733,10 +734,18 @@ def _run_single_mode():
     st.write("")
 
     if processing:
-        _do_processing()
+        try:
+            _do_processing()
+        except Exception as exc:
+            st.session_state["_processing"] = False
+            st.session_state["_single_error"] = str(exc)
+            st.rerun()
         return
 
     if not result:
+        if single_error:
+            st.error(single_error)
+
         col_left, col_right = st.columns(2, gap="medium")
 
         with col_left:
@@ -805,6 +814,7 @@ def _run_single_mode():
             st.session_state["_rcp_bytes"]  = receipt_file.getvalue()
             st.session_state["_inv_name"]   = invoice_file.name
             st.session_state["_rcp_name"]   = receipt_file.name
+            st.session_state.pop("_single_error", None)
             st.session_state["_processing"] = True
             st.rerun()
 
@@ -844,6 +854,7 @@ def _run_single_mode():
             if st.button("Kiểm tra mới", use_container_width=True):
                 st.session_state.pop("_single_result", None)
                 st.session_state.pop("_single_output", None)
+                st.session_state.pop("_single_error", None)
                 st.rerun()
 
 
@@ -1171,6 +1182,7 @@ def main():
             st.session_state.pop("_single_result", None)
             st.session_state.pop("_single_output", None)
             st.session_state.pop("_batch_results", None)
+            st.session_state.pop("_single_error", None)
             st.session_state["_processing"]       = False
             st.session_state["_batch_processing"] = False
             st.rerun()

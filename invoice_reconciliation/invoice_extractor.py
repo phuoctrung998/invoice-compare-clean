@@ -19,7 +19,7 @@ class InvoiceExtractor(object):
     - Du lieu tra ve luon duoc normalize va validate qua Pydantic.
     """
 
-    DEFAULT_MODEL = "gpt-5-mini"
+    DEFAULT_MODEL = "gpt-5"
 
     def __init__(self, model=None, api_key=None, base_url=None):
         self._model = model or self.DEFAULT_MODEL
@@ -148,6 +148,7 @@ class InvoiceExtractor(object):
         advice = {
             400: "Request khong hop le. Hay kiem tra model va kich thuoc noi dung invoice.",
             401: "API key khong hop le. Hay cap nhat OPENAI_API_KEY trong Streamlit Secrets.",
+            402: "Tai khoan/API project chua co billing hoac khong du credit de goi model.",
             403: "API key/project chua co quyen dung model nay hoac Responses API.",
             404: "Khong tim thay endpoint/model. Hay kiem tra OPENAI_BASE_URL va ten model.",
             429: "Het quota, billing chua active, hoac dang bi rate limit.",

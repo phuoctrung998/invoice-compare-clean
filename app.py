@@ -459,7 +459,8 @@ _TOP_NAV = """
 def _openai_config():
     api_key = st.secrets["OPENAI_API_KEY"] if "OPENAI_API_KEY" in st.secrets else os.getenv("OPENAI_API_KEY")
     base_url = st.secrets["OPENAI_BASE_URL"] if "OPENAI_BASE_URL" in st.secrets else os.getenv("OPENAI_BASE_URL")
-    return api_key, base_url
+    model = st.secrets["OPENAI_MODEL"] if "OPENAI_MODEL" in st.secrets else os.getenv("OPENAI_MODEL")
+    return api_key, base_url, model
 
 
 def _load_env():
@@ -668,8 +669,8 @@ def _do_processing():
     rcp_name  = st.session_state.get("_rcp_name", "receipt.xlsx")
 
     proc_ph   = st.empty()
-    api_key, base_url = _openai_config()
-    extractor = InvoiceExtractor(api_key=api_key, base_url=base_url)
+    api_key, base_url, model = _openai_config()
+    extractor = InvoiceExtractor(api_key=api_key, base_url=base_url, model=model)
     parser    = ReceiptParser()
     engine    = CompareEngine()
     exporter  = ExcelExporter()
@@ -956,8 +957,8 @@ def _do_batch_processing():
             rcp_path.write_bytes(rcp_bytes)
 
             try:
-                api_key, base_url = _openai_config()
-                extractor = InvoiceExtractor(api_key=api_key, base_url=base_url)
+                api_key, base_url, model = _openai_config()
+                extractor = InvoiceExtractor(api_key=api_key, base_url=base_url, model=model)
                 parser    = ReceiptParser()
                 engine    = CompareEngine()
                 exporter  = ExcelExporter()
@@ -1163,7 +1164,7 @@ def main():
     st.markdown(_CSS, unsafe_allow_html=True)
     st.markdown(_TOP_NAV, unsafe_allow_html=True)
 
-    api_key, _base_url = _openai_config()
+    api_key, _base_url, _model = _openai_config()
     if not api_key:
         st.error("Chưa thấy OPENAI_API_KEY. Vui lòng thêm key vào Streamlit Secrets hoặc file .env trước khi mở app.")
         st.stop()

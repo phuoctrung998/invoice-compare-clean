@@ -19,7 +19,7 @@ class InvoiceExtractor(object):
     - Du lieu tra ve luon duoc normalize va validate qua Pydantic.
     """
 
-    DEFAULT_MODEL = "gpt-5"
+    DEFAULT_MODEL = "gpt-5.6-sol"
 
     def __init__(self, model=None, api_key=None, base_url=None):
         self._model = model or self.DEFAULT_MODEL
